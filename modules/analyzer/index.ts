@@ -36,6 +36,15 @@ export {
 } from "./lib/subscription-status";
 
 export { chunkLogText } from "./lib/chunking";
+export {
+  generateEmbeddings,
+  type TextEmbedding,
+} from "./lib/embeddings";
+
+export {
+  cosineSimilarity,
+  searchRelatedChunks,
+} from "./lib/vector-search";
 
 export { getCustomerProfile } from "./repositories/user.repository";
 export {
