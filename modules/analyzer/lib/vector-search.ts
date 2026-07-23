@@ -33,28 +33,90 @@ export function cosineSimilarity(vecA: number[], vecB: number[]): number {
   return dotProduct / magnitude;
 }
 
+const KEYWORD_STOPWORDS = new Set([
+  "about",
+  "after",
+  "before",
+  "cause",
+  "caused",
+  "error",
+  "errors",
+  "from",
+  "have",
+  "logs",
+  "that",
+  "this",
+  "what",
+  "when",
+  "where",
+  "which",
+  "with",
+  "چرا",
+  "چه",
+  "در",
+  "را",
+  "که",
+]);
+
+function keywordBoost(chunkText: string, queryText: string): number {
+  const lowerChunk = chunkText.toLowerCase();
+  const lowerQuery = queryText.toLowerCase();
+  let boost = 0;
+
+  for (const code of queryText.match(/\b\d{3}\b/g) ?? []) {
+    if (chunkText.includes(code)) {
+      boost += 0.12;
+    }
+  }
+
+  for (const token of lowerQuery.match(/[a-z0-9][a-z0-9_./:-]{2,}/g) ?? []) {
+    if (KEYWORD_STOPWORDS.has(token)) {
+      continue;
+    }
+
+    if (lowerChunk.includes(token)) {
+      boost += 0.04;
+    }
+  }
+
+  return Math.min(boost, 0.35);
+}
+
 /**
  * Finds the most semantically similar log chunks for a query embedding.
  *
+ * When {@link queryText} is provided, matching status codes and keywords
+ * receive a small score boost so literal log terms are not missed.
+ *
  * @param queryVector - Embedding of the search query.
  * @param documentEmbeddings - Chunk embeddings from {@link generateEmbeddings}.
- * @param topK - Maximum number of results to return (default 3).
- * @returns Top-K chunks sorted by descending cosine similarity.
+ * @param topK - Maximum number of results to return (default 5).
+ * @param queryText - Original question text for hybrid keyword boosting.
+ * @returns Top-K chunks sorted by descending combined score.
  */
 export function searchRelatedChunks(
   queryVector: number[],
   documentEmbeddings: TextEmbedding[],
-  topK: number = 3
+  topK: number = 5,
+  queryText?: string
 ): TextEmbedding[] {
   if (topK <= 0 || documentEmbeddings.length === 0) {
     return [];
   }
 
   const ranked = documentEmbeddings
-    .map((embedding) => ({
-      embedding,
-      score: cosineSimilarity(queryVector, embedding.vector),
-    }))
+    .map((embedding) => {
+      const semanticScore = cosineSimilarity(queryVector, embedding.vector);
+      const boost =
+        queryText !== undefined
+          ? keywordBoost(embedding.text, queryText)
+          : 0;
+
+      return {
+        embedding,
+        score: semanticScore + boost,
+      };
+    })
     .sort((left, right) => right.score - left.score);
 
   return ranked.slice(0, topK).map(({ embedding }) => embedding);

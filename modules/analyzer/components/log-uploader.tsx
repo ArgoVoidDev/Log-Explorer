@@ -20,6 +20,9 @@ import {
 import { cn } from "@core/lib/utils";
 import { Button, Typography } from "@core/ui";
 
+import { chunkLogText } from "../lib/chunking";
+import { generateEmbeddings, type TextEmbedding } from "../lib/embeddings";
+
 const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024;
 const ACCEPTED_EXTENSIONS = [".txt", ".log"] as const;
 
@@ -53,14 +56,51 @@ function getPreviewLines(content: string, count = 3): string[] {
   return content.split(/\r?\n/).slice(0, count);
 }
 
-export function LogUploader() {
+export type LogUploaderProps = {
+  apiKey?: string | null;
+  onEmbeddingsReady?: (payload: {
+    embeddings: TextEmbedding[];
+    fileName: string;
+  }) => void;
+};
+
+export function LogUploader({ apiKey, onEmbeddingsReady }: LogUploaderProps = {}) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [isDragOver, setIsDragOver] = useState(false);
   const [isReading, setIsReading] = useState(false);
+  const [isEmbedding, setIsEmbedding] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [fileName, setFileName] = useState<string | null>(null);
   const [fileSize, setFileSize] = useState<number | null>(null);
   const [content, setContent] = useState<string | null>(null);
+
+  const embedLogContent = useCallback(
+    async (text: string, loadedFileName: string) => {
+      const trimmedKey = apiKey?.trim();
+
+      if (!trimmedKey || !onEmbeddingsReady) {
+        return;
+      }
+
+      setIsEmbedding(true);
+      setError(null);
+
+      try {
+        const chunks = chunkLogText(text);
+        const embeddings = await generateEmbeddings(chunks, trimmedKey);
+        onEmbeddingsReady({ embeddings, fileName: loadedFileName });
+      } catch (embeddingError) {
+        setError(
+          embeddingError instanceof Error
+            ? embeddingError.message
+            : "Failed to generate embeddings for this log file."
+        );
+      } finally {
+        setIsEmbedding(false);
+      }
+    },
+    [apiKey, onEmbeddingsReady]
+  );
 
   const processFile = useCallback((file: File) => {
     const validationError = validateFile(file);
@@ -80,8 +120,10 @@ export function LogUploader() {
 
     const reader = new FileReader();
     reader.onload = () => {
-      setContent(typeof reader.result === "string" ? reader.result : "");
+      const text = typeof reader.result === "string" ? reader.result : "";
+      setContent(text);
       setIsReading(false);
+      void embedLogContent(text, file.name);
     };
     reader.onerror = () => {
       setError("Could not read the file. Please try again.");
@@ -91,7 +133,7 @@ export function LogUploader() {
       setIsReading(false);
     };
     reader.readAsText(file);
-  }, []);
+  }, [embedLogContent]);
 
   function handleDragEnter(event: DragEvent<HTMLDivElement>) {
     event.preventDefault();
@@ -144,10 +186,12 @@ export function LogUploader() {
     setError(null);
     setIsDragOver(false);
     setIsReading(false);
+    setIsEmbedding(false);
   }
 
   const previewLines = content ? getPreviewLines(content) : [];
-  const isSuccess = content !== null && !isReading && !error;
+  const isBusy = isReading || isEmbedding;
+  const isSuccess = content !== null && !isBusy && !error;
 
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-8">
@@ -168,7 +212,7 @@ export function LogUploader() {
         role="button"
         tabIndex={0}
         aria-label="Upload log file"
-        aria-busy={isReading}
+        aria-busy={isBusy}
         onClick={handleBrowseClick}
         onKeyDown={handleDropzoneKeyDown}
         onDragEnter={handleDragEnter}
@@ -180,7 +224,7 @@ export function LogUploader() {
           isDragOver
             ? "scale-[1.01] border-[var(--saas-accent)] bg-[var(--saas-accent)]/10 shadow-[0_0_0_4px_oklch(0.55_0.08_220/0.12)]"
             : "border-[var(--saas-line)] bg-[var(--saas-panel)] hover:border-[var(--saas-accent)]/60 hover:bg-[var(--saas-surface)]",
-          isReading && "pointer-events-none opacity-80",
+          isBusy && "pointer-events-none opacity-80",
         )}
       >
         <input
@@ -199,7 +243,7 @@ export function LogUploader() {
               : "bg-[var(--saas-surface)] text-[var(--saas-muted)] group-hover:bg-[var(--saas-accent)]/10 group-hover:text-[var(--saas-accent)]",
           )}
         >
-          {isReading ? (
+          {isBusy ? (
             <Loader2 className="size-7 animate-spin" aria-hidden />
           ) : isDragOver ? (
             <FileText className="size-7" aria-hidden />
@@ -215,6 +259,8 @@ export function LogUploader() {
           >
             {isReading
               ? "Reading file…"
+              : isEmbedding
+                ? "Generating embeddings…"
               : isDragOver
                 ? "Drop your log file here"
                 : "Drag & drop your log file here"}

@@ -61,7 +61,9 @@ export { DashboardShell } from "./components/layout/dashboard-shell";
 export { DashboardSidebar } from "./components/layout/dashboard-sidebar";
 export { DashboardTopbar } from "./components/layout/dashboard-topbar";
 export { DashboardOverviewContent } from "./components/dashboard-overview-content";
-export { LogUploader } from "./components/log-uploader";
+export { LogUploader, type LogUploaderProps } from "./components/log-uploader";
+export { ChatInterface, type ChatInterfaceProps } from "./components/chat-interface";
+export { DashboardLogExplorer } from "./components/dashboard-log-explorer";
 export { BillingPageContent } from "./components/billing-page-content";
 export { ProfilePageContent } from "./components/profile-page-content";
 export {

@@ -1,5 +1,5 @@
-import { LogUploader } from "@modules/saas";
+import { DashboardLogExplorer } from "@modules/saas";
 
 export default function DashboardPage() {
-  return <LogUploader />;
+  return <DashboardLogExplorer />;
 }

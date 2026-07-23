@@ -3,14 +3,15 @@
  * Uses the Generative Language REST API with native fetch (browser-only).
  */
 
-const EMBEDDING_MODEL = "text-embedding-004";
-const BATCH_EMBEDDING_ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/${EMBEDDING_MODEL}:batchEmbedContents`;
-const MAX_BATCH_SIZE = 100;
+const EMBEDDING_MODEL = "gemini-embedding-001";
+const EMBED_CONTENT_URL = `https://generativelanguage.googleapis.com/v1beta/models/${EMBEDDING_MODEL}:embedContent`;
 
 export type TextEmbedding = {
   text: string;
   vector: number[];
 };
+
+export type EmbeddingTaskType = "RETRIEVAL_DOCUMENT" | "RETRIEVAL_QUERY";
 
 type GeminiErrorBody = {
   error?: {
@@ -20,10 +21,10 @@ type GeminiErrorBody = {
   };
 };
 
-type BatchEmbedContentResponse = GeminiErrorBody & {
-  embeddings?: Array<{
+type EmbedContentResponse = GeminiErrorBody & {
+  embedding?: {
     values?: number[];
-  }>;
+  };
 };
 
 function formatGeminiError(payload: GeminiErrorBody, status: number): string {
@@ -36,96 +37,21 @@ function formatGeminiError(payload: GeminiErrorBody, status: number): string {
   return message ?? `Gemini embedding request failed (HTTP ${status}).`;
 }
 
-function chunkArray<T>(items: T[], size: number): T[][] {
-  const batches: T[][] = [];
-
-  for (let index = 0; index < items.length; index += size) {
-    batches.push(items.slice(index, index + size));
-  }
-
-  return batches;
-}
-
-async function fetchEmbeddingBatch(
-  texts: string[],
-  apiKey: string
-): Promise<number[][]> {
-  let response: Response;
-
-  try {
-    response = await fetch(
-      `${BATCH_EMBEDDING_ENDPOINT}?key=${encodeURIComponent(apiKey)}`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          requests: texts.map((text) => ({
-            model: `models/${EMBEDDING_MODEL}`,
-            content: {
-              parts: [{ text }],
-            },
-            taskType: "RETRIEVAL_DOCUMENT",
-          })),
-        }),
-      }
-    );
-  } catch (error) {
-    throw new Error("Network error while contacting the Gemini embedding API.", {
-      cause: error,
-    });
-  }
-
-  let payload: BatchEmbedContentResponse;
-
-  try {
-    payload = (await response.json()) as BatchEmbedContentResponse;
-  } catch (error) {
-    throw new Error(
-      `Failed to parse Gemini embedding response (HTTP ${response.status}).`,
-      { cause: error }
-    );
-  }
-
-  if (!response.ok) {
-    throw new Error(formatGeminiError(payload, response.status));
-  }
-
-  const embeddings = payload.embeddings;
-
-  if (!embeddings || embeddings.length !== texts.length) {
-    throw new Error(
-      "Gemini batch embedding response count did not match the request."
-    );
-  }
-
-  return embeddings.map((embedding, index) => {
-    const vector = embedding.values;
-
-    if (!vector || vector.length === 0) {
-      throw new Error(
-        `Gemini embedding response did not include vector values for chunk ${index + 1}.`
-      );
-    }
-
-    return vector;
-  });
-}
-
 /**
  * Generates embedding vectors for log text chunks via the Gemini API.
  *
- * Uses `batchEmbedContents` (up to 100 chunks per request) to minimize
- * round-trips for large log files.
+ * Sends one `embedContent` request per chunk sequentially for broad
+ * API key compatibility.
  *
  * @param chunks - Text chunks to embed (e.g. from {@link chunkLogText}).
  * @param apiKey - User-provided Gemini API key (BYOK).
+ * @param taskType - Retrieval task hint for {@link gemini-embedding-001}.
  * @returns Embeddings in the same order as the input chunks.
  */
 export async function generateEmbeddings(
   chunks: string[],
-  apiKey: string
+  apiKey: string,
+  taskType: EmbeddingTaskType = "RETRIEVAL_DOCUMENT"
 ): Promise<TextEmbedding[]> {
   const trimmedKey = apiKey.trim();
 
@@ -137,30 +63,60 @@ export async function generateEmbeddings(
     return [];
   }
 
-  try {
-    const batches = chunkArray(chunks, MAX_BATCH_SIZE);
-    const results: TextEmbedding[] = [];
+  const results: TextEmbedding[] = [];
 
-    for (const batch of batches) {
-      const vectors = await fetchEmbeddingBatch(batch, trimmedKey);
+  for (let index = 0; index < chunks.length; index++) {
+    const chunk = chunks[index]!;
+    let response: Response;
 
-      for (const vector of vectors) {
-        const chunkIndex = results.length;
-        results.push({
-          text: chunks[chunkIndex]!,
-          vector,
-        });
-      }
+    try {
+      response = await fetch(`${EMBED_CONTENT_URL}?key=${trimmedKey}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: `models/${EMBEDDING_MODEL}`,
+          content: {
+            parts: [{ text: chunk }],
+          },
+          embedContentConfig: {
+            taskType,
+          },
+        }),
+      });
+    } catch (error) {
+      throw new Error(
+        "Network error while contacting the Gemini embedding API.",
+        { cause: error }
+      );
     }
 
-    return results;
-  } catch (error) {
-    if (error instanceof Error) {
-      throw error;
+    let payload: EmbedContentResponse;
+
+    try {
+      payload = (await response.json()) as EmbedContentResponse;
+    } catch (error) {
+      throw new Error(
+        `Failed to parse Gemini embedding response (HTTP ${response.status}).`,
+        { cause: error }
+      );
     }
 
-    throw new Error("Unexpected error while generating embeddings.", {
-      cause: error,
-    });
+    if (!response.ok) {
+      throw new Error(formatGeminiError(payload, response.status));
+    }
+
+    const vector = payload.embedding?.values;
+
+    if (!vector || vector.length === 0) {
+      throw new Error(
+        `Gemini embedding response did not include vector values for chunk ${index + 1}.`
+      );
+    }
+
+    results.push({ text: chunk, vector });
   }
+
+  return results;
 }
