@@ -35,6 +35,8 @@ export {
   isSubscriptionUsable,
 } from "./lib/subscription-status";
 
+export { chunkLogText } from "./lib/chunking";
+
 export { getCustomerProfile } from "./repositories/user.repository";
 export {
   getBillingSummary,
