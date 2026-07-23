@@ -1,16 +1,5 @@
-import {
-  DashboardOverviewContent,
-  getDashboardOverview,
-  guestCustomerProfile,
-} from "@modules/saas";
+import { LogUploader } from "@modules/saas";
 
-export default async function DashboardPage() {
-  const overview = await getDashboardOverview(guestCustomerProfile.id);
-
-  return (
-    <DashboardOverviewContent
-      profile={guestCustomerProfile}
-      overview={overview}
-    />
-  );
+export default function DashboardPage() {
+  return <LogUploader />;
 }
