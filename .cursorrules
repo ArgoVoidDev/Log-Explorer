@@ -1,0 +1,8 @@
+# ArgoCore Global AI Rules
+- Architecture: Modular approach.
+- Core logic (Auth, UI components, Database connections) goes into `/core`.
+- Domain-specific logic goes into dedicated modules: `/modules/ecommerce`, `/modules/saas`, `/modules/portfolio`.
+- NEVER mix domain logic. E-commerce code must not leak into Portfolio or SaaS modules.
+- Use Server Components by default. Use 'use client' only when hooks/state are needed.
+- Write clean, abstraction-focused code to minimize token usage.
+- Read referenced `.md` files carefully before generating code.

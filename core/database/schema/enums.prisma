@@ -1,0 +1,8 @@
+// Platform-wide roles. Staff roles gate admin panels across modules.
+enum UserRole {
+  ADMIN
+  MANAGER
+  EDITOR
+  SUPPORT
+  CUSTOMER
+}

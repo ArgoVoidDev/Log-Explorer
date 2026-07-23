@@ -1,0 +1,13 @@
+// Section-based RBAC. `section` is a string so modules can register their own
+// keys (e.g. "ecommerce:ORDERS", "saas:SUBSCRIPTIONS") without altering core enums.
+
+model RolePermission {
+  id       String   @id @default(cuid())
+  role     UserRole
+  section  String
+  canRead  Boolean  @default(true)
+  canWrite Boolean  @default(false)
+
+  @@unique([role, section])
+  @@index([role])
+}

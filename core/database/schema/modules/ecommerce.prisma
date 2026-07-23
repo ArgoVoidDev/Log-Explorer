@@ -1,0 +1,220 @@
+// Ecommerce domain models — catalog, orders, payments, coupons.
+// Owned by /modules/ecommerce; referenced from User via back-relations.
+
+enum CatalogOrderStatus {
+  PENDING_PAYMENT
+  PAID
+  PROCESSING
+  PACKED
+  SHIPPED
+  DELIVERED
+  CANCELLED
+  REFUNDED
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCESS
+  FAILED
+}
+
+enum DiscountType {
+  PERCENT
+  FIXED
+}
+
+model Category {
+  id        String   @id @default(cuid())
+  slug      String   @unique
+  nameFa    String
+  filterKey String
+  createdAt DateTime @default(now())
+
+  catalogProducts CatalogProduct[]
+}
+
+model ShoeModelOption {
+  id           String  @id @default(cuid())
+  slug         String  @unique
+  labelFa      String
+  labelEn      String?
+  previewImage String?
+  sortOrder    Int     @default(0)
+  active       Boolean @default(true)
+
+  catalogProducts CatalogProduct[]
+}
+
+model BaseColorOption {
+  id        String  @id @default(cuid())
+  slug      String  @unique
+  labelFa   String
+  labelEn   String?
+  sortOrder Int     @default(0)
+  active    Boolean @default(true)
+
+  catalogProducts CatalogProduct[]
+}
+
+model CatalogProduct {
+  id              String   @id @default(cuid())
+  slug            String   @unique
+  title           String
+  price           Int
+  inStock         Boolean  @default(true)
+  baseShoeModelId String
+  baseColorId     String
+  animeSeries     String?
+  categoryId      String
+  sizes           Int[]
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  category      Category                      @relation(fields: [categoryId], references: [id])
+  baseShoeModel ShoeModelOption               @relation(fields: [baseShoeModelId], references: [id])
+  baseColor     BaseColorOption               @relation(fields: [baseColorId], references: [id])
+  images        ProductImage[]
+  sizeInventory CatalogProductSizeInventory[]
+  orderItems    CatalogOrderItem[]
+
+  @@index([animeSeries])
+  @@index([categoryId])
+  @@index([inStock])
+  @@index([baseShoeModelId])
+  @@index([baseColorId])
+}
+
+model CatalogProductSizeInventory {
+  id               String @id @default(cuid())
+  catalogProductId String
+  size             Int
+  quantity         Int    @default(0)
+
+  catalogProduct CatalogProduct @relation(fields: [catalogProductId], references: [id], onDelete: Cascade)
+
+  @@unique([catalogProductId, size])
+  @@index([catalogProductId])
+}
+
+model ProductImage {
+  id               String @id @default(cuid())
+  url              String
+  sortOrder        Int    @default(0)
+  catalogProductId String
+
+  catalogProduct CatalogProduct @relation(fields: [catalogProductId], references: [id], onDelete: Cascade)
+
+  @@index([catalogProductId])
+}
+
+model Coupon {
+  id             String       @id @default(cuid())
+  code           String       @unique
+  discountType   DiscountType
+  value          Int
+  minOrderAmount Int?
+  maxUses        Int?
+  expiresAt      DateTime?
+  active         Boolean      @default(true)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  usages CouponUsage[]
+  orders CatalogOrder[]
+}
+
+model CouponUsage {
+  id       String   @id @default(cuid())
+  couponId String
+  userId   String
+  orderId  String   @unique
+  usedAt   DateTime @default(now())
+
+  coupon Coupon       @relation(fields: [couponId], references: [id], onDelete: Cascade)
+  user   User         @relation(fields: [userId], references: [id])
+  order  CatalogOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@unique([couponId, userId])
+  @@index([couponId])
+  @@index([userId])
+}
+
+model CatalogOrder {
+  id              String              @id @default(cuid())
+  userId          String
+  status          CatalogOrderStatus  @default(PENDING_PAYMENT)
+  subtotal        Int
+  shippingCost    Int                 @default(0)
+  discountAmount  Int                 @default(0)
+  total           Int
+  shippingName    String
+  shippingPhone   String
+  shippingCity    String
+  shippingAddress String              @db.Text
+  trackingCode    String?
+  couponId        String?
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+
+  user        User               @relation(fields: [userId], references: [id])
+  coupon      Coupon?            @relation(fields: [couponId], references: [id], onDelete: SetNull)
+  items       CatalogOrderItem[]
+  payment     Payment?
+  couponUsage CouponUsage?
+
+  @@index([userId])
+  @@index([status])
+  @@index([couponId])
+}
+
+model CatalogOrderItem {
+  id        String @id @default(cuid())
+  orderId   String
+  productId String
+  size      Int
+  quantity  Int
+  unitPrice Int
+
+  order   CatalogOrder   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product CatalogProduct @relation(fields: [productId], references: [id])
+
+  @@index([orderId])
+}
+
+model Payment {
+  id        String        @id @default(cuid())
+  orderId   String        @unique
+  authority String?       @unique
+  refId     String?
+  amount    Int
+  status    PaymentStatus @default(PENDING)
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  order CatalogOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
+}
+
+model StoreSetting {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     String   @db.Text
+  updatedAt DateTime @updatedAt
+}
+
+model SavedAddress {
+  id         String   @id @default(cuid())
+  userId     String
+  label      String?
+  fullName   String
+  phone      String
+  city       String
+  address    String   @db.Text
+  postalCode String?
+  isDefault  Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}

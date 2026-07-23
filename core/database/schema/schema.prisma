@@ -1,0 +1,11 @@
+// ArgoCore — main Prisma schema entry (generator + datasource).
+// Core models live alongside this file; domain modules add *.prisma files here
+// or under schema/modules/ when they introduce tables (Orders, Subscriptions, …).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
