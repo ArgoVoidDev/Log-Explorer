@@ -1,5 +1,6 @@
 import { Typography } from "@core/ui";
 
+import { ByokSettingsPanel } from "./byok-settings-modal";
 import type { SaasCustomerProfile } from "../types";
 
 type ProfilePageContentProps = {
@@ -30,6 +31,8 @@ export function ProfilePageContent({ profile }: ProfilePageContentProps) {
           value={profile.memberSince.toLocaleDateString()}
         />
       </dl>
+
+      <ByokSettingsPanel />
     </div>
   );
 }

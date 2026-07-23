@@ -47,3 +47,16 @@ export { DashboardTopbar } from "./components/layout/dashboard-topbar";
 export { DashboardOverviewContent } from "./components/dashboard-overview-content";
 export { BillingPageContent } from "./components/billing-page-content";
 export { ProfilePageContent } from "./components/profile-page-content";
+export {
+  ByokSettingsModal,
+  ByokSettingsPanel,
+} from "./components/byok-settings-modal";
+export type { ByokSettingsModalProps } from "./components/byok-settings-modal";
+export {
+  useApiKey,
+  GEMINI_API_KEY_STORAGE_KEY,
+  readGeminiApiKey,
+  writeGeminiApiKey,
+  deleteGeminiApiKey,
+} from "./hooks/use-api-key";
+export type { UseApiKeyResult } from "./hooks/use-api-key";
