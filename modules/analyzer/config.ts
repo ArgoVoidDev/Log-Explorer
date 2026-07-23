@@ -29,3 +29,13 @@ export const saasDashboardNav = [
 ] as const;
 
 export type SaasDashboardNavItem = (typeof saasDashboardNav)[number];
+
+/** Placeholder profile for the public BYOK dashboard (no server auth). */
+export const guestCustomerProfile = {
+  id: "guest",
+  name: "Guest",
+  email: null,
+  phone: "",
+  avatarUrl: null,
+  memberSince: new Date("2024-01-01T00:00:00.000Z"),
+} as const;

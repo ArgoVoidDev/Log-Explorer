@@ -5,7 +5,10 @@ import {
   UserRole,
   DiscountType,
 } from "@core/database";
-import { hasAnyStock } from "@modules/ecommerce/lib/inventory";
+
+function hasAnyStock(inventory: { quantity: number }[]): boolean {
+  return inventory.some((row) => row.quantity > 0);
+}
 
 const BCRYPT_COST = 12;
 

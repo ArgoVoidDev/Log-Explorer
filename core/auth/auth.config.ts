@@ -7,9 +7,6 @@ import { isStaffRole } from "./rbac";
  * Coarse route gates only — fine-grained RBAC runs in Node (layout + actions).
  */
 export const authConfig = {
-  pages: {
-    signIn: "/login",
-  },
   callbacks: {
     authorized({ auth, request: { nextUrl } }) {
       const isLoggedIn = !!auth?.user;

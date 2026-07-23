@@ -21,7 +21,9 @@
     "paths": {
       "@/*": ["./src/*"],
       "@core/*": ["./core/*"],
-      "@modules/*": ["./modules/*"]
+      "@modules/*": ["./modules/*"],
+      "@modules/saas": ["./modules/analyzer"],
+      "@modules/saas/*": ["./modules/analyzer/*"]
     }
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],

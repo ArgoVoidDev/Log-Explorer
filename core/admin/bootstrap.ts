@@ -15,9 +15,6 @@ export async function ensureModulesLoaded(): Promise<void> {
 
   const loaders: Array<Promise<unknown>> = [];
 
-  if (isModuleActive("ecommerce")) {
-    loaders.push(import("@modules/ecommerce/admin"));
-  }
   if (isModuleActive("saas")) {
     loaders.push(import("@modules/saas/admin"));
   }

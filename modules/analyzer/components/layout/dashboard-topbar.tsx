@@ -1,7 +1,5 @@
-import { buttonVariants, Typography } from "@core/ui";
-import { cn } from "@core/lib/utils";
+import { Typography } from "@core/ui";
 
-import { signOutAction } from "../../actions/auth.actions";
 import { DashboardMobileNav } from "./dashboard-sidebar";
 
 type DashboardTopbarProps = {
@@ -21,25 +19,12 @@ export function DashboardTopbar({ userName }: DashboardTopbarProps) {
         </Typography>
       </div>
 
-      <div className="flex items-center gap-3">
-        <Typography
-          variant="small"
-          className="max-w-[10rem] truncate text-[var(--saas-ink)] md:max-w-xs"
-        >
-          {userName}
-        </Typography>
-        <form action={signOutAction}>
-          <button
-            type="submit"
-            className={cn(
-              buttonVariants({ variant: "outline", size: "sm" }),
-              "border-[var(--saas-line)] text-[var(--saas-ink)]",
-            )}
-          >
-            Sign out
-          </button>
-        </form>
-      </div>
+      <Typography
+        variant="small"
+        className="max-w-[10rem] truncate text-[var(--saas-ink)] md:max-w-xs"
+      >
+        {userName}
+      </Typography>
     </header>
   );
 }

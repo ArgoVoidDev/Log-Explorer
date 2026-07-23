@@ -1,7 +1,7 @@
 import { Manrope, Syne } from "next/font/google";
 
 import { buildRootMetadata, JsonLd, buildWebSiteJsonLd } from "@core/seo";
-import { portfolioConfig } from "@modules/portfolio";
+import { saasConfig } from "@modules/saas";
 
 import "./globals.css";
 
@@ -24,8 +24,8 @@ const portfolioDisplay = Syne({
 });
 
 export const metadata = buildRootMetadata({
-  name: portfolioConfig.name,
-  description: portfolioConfig.tagline,
+  name: saasConfig.name,
+  description: saasConfig.tagline,
 });
 
 export default function RootLayout({
@@ -42,8 +42,8 @@ export default function RootLayout({
         <JsonLd
           id="site-jsonld"
           data={buildWebSiteJsonLd({
-            name: portfolioConfig.name,
-            description: portfolioConfig.tagline,
+            name: saasConfig.name,
+            description: saasConfig.tagline,
           })}
         />
         {children}

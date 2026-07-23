@@ -14,14 +14,14 @@ export type CustomerDashboardSession = Session & {
 
 /**
  * Gate the SaaS customer dashboard (CUSTOMER_PANEL access model).
- * - no session → /login
+ * - no session → /dashboard (public BYOK MVP)
  * - staff → /admin
  * - role ≠ CUSTOMER → /
  */
 export async function requireCustomerDashboard(): Promise<CustomerDashboardSession> {
   const session = await getFreshSession();
 
-  if (!session?.user?.id) redirect("/login");
+  if (!session?.user?.id) redirect("/dashboard");
   if (isStaffRole(session.user.role)) redirect("/admin");
   if (session.user.role !== "CUSTOMER") redirect("/");
 

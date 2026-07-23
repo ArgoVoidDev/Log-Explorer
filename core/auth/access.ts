@@ -51,7 +51,7 @@ export async function getFreshSession(): Promise<Session | null> {
 /** Staff-only session with DB-fresh role; redirects if unauthorized. */
 export async function getFreshStaffSession(): Promise<FreshStaffSession> {
   const session = await getFreshSession();
-  if (!session?.user?.id) redirect("/login");
+  if (!session?.user?.id) redirect("/dashboard");
   if (!isStaffRole(session.user.role)) redirect("/");
   return session as FreshStaffSession;
 }

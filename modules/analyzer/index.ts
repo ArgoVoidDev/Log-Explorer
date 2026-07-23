@@ -5,7 +5,12 @@
  * Billing/subscription types live here; no ecommerce order or cart imports.
  */
 
-export { saasConfig, saasDashboardNav, type SaasConfig } from "./config";
+export {
+  saasConfig,
+  saasDashboardNav,
+  guestCustomerProfile,
+  type SaasConfig,
+} from "./config";
 
 export {
   requireCustomerDashboard,
